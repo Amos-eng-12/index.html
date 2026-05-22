@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kigali Population Heatmap 2022</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    body { margin: 0; }
+    #map { height: 100vh; width: 100%; }
+    .info-box {
+      background: white;
+      padding: 10px 14px;
+      border-radius: 6px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.3);
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+    .info-box h4 { margin: 0 0 6px 0; font-size: 14px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
+<script>
+
+  var map = L.map("map").setView([-1.9441, 30.0619], 12);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18,
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+
+  // Raw data: [lat, lng, population, area_km2]
+  var rawData = [
+    [-1.9536, 30.0606, 51805, 4.1],
+    [-1.9612, 30.0598, 42311, 3.8],
+    [-1.9823, 30.0185, 28044, 12.0],
+    [-1.9441, 30.0619, 19503, 2.1],
+    [-1.9682, 30.0490, 52673, 2.6],
+    [-2.0234, 30.0012, 18512, 23.5],
+    [-1.9510, 30.0532, 28890, 2.0],
+    [-1.9601, 30.0512, 35422, 2.4],
+    [-1.9758, 30.0384, 61340, 5.2],
+    [-1.9487, 30.0589, 21055, 3.5],
+    [-1.9638, 30.0556, 30218, 2.7],
+    [-1.8612, 30.1023, 30101, 27.6],
+    [-1.9012, 30.0645, 37655, 6.1],
+    [-1.8534, 30.1356, 25345, 41.8],
+    [-1.8912, 30.0878, 42118, 8.3],
+    [-1.8723, 30.1289, 31209, 26.5],
+    [-1.8945, 30.1545, 22450, 18.4],
+    [-1.9312, 30.0934, 28771, 5.8],
+    [-1.9378, 30.0978, 28432, 4.9],
+    [-1.9189, 30.1123, 74374, 10.5],
+    [-1.8856, 30.1234, 43218, 18.1],
+    [-1.8645, 30.1478, 36745, 29.3],
+    [-1.8423, 30.0923, 27109, 42.7],
+    [-1.9267, 30.1034, 63901, 7.1],
+    [-1.8312, 30.1645, 40215, 43.5],
+    [-1.8534, 30.1023, 17342, 29.1],
+    [-2.0134, 30.1023, 45011, 28.4],
+    [-1.9834, 30.0978, 43780, 6.4],
+    [-1.9712, 30.0834, 38976, 5.8],
+    [-1.9923, 30.1056, 37543, 9.3],
+    [-1.9634, 30.1312, 42671, 26.7],
+    [-1.9812, 30.0934, 39820, 5.3],
+    [-2.0045, 30.1178, 35609, 35.7],
+    [-1.9945, 30.0856, 31247, 5.9],
+    [-1.9756, 30.1045, 36451, 9.1],
+  ];
+
+  // Calculate density: population / area
+  var heatData = rawData.map(function(d) {
+    return [d[0], d[1], d[2] / d[3]];
+  });
+
+  // Find max density for normalization
+  var maxDensity = Math.max.apply(null, heatData.map(function(d) { return d[2]; }));
+
+  // Create heatmap layer
+  L.heatLayer(heatData, {
+    radius: 40,
+    blur: 30,
+    maxZoom: 15,
+    max: maxDensity,
+    minOpacity: 0.5,
+    gradient: {
+      0.2: "#0000ff",
+      0.4: "#00ccff",
+      0.6: "#00ff00",
+      0.75: "#ffff00",
+      0.9: "#ff8800",
+      1.0: "#ff0000"
+    }
+  }).addTo(map);
+
+  // Legend control
+  var legend = L.control({ position: "topright" });
+  legend.onAdd = function() {
+    var div = L.DomUtil.create("div", "info-box");
+    div.innerHTML =
+      "<h4>&#127777;&#65039; Kigali Population Density</h4>" +
+      "<small>2022 Census &nbsp;|&nbsp; 35 Sectors<br>" +
+      "Intensity = Population / Area (km&sup2;)<br>" +
+      "Max density: <b>" + Math.round(maxDensity).toLocaleString() + " /km&sup2;</b></small>" +
+      "<hr style='margin:6px 0; border:none; border-top:1px solid #ddd;'>" +
+      "<div class='legend-item'><span class='legend-dot' style='background:#ff0000'></span> High density</div>" +
+      "<div class='legend-item'><span class='legend-dot' style='background:#ff8800'></span> Medium-high</div>" +
+      "<div class='legend-item'><span class='legend-dot' style='background:#ffff00; border:1px solid #ccc'></span> Medium</div>" +
+      "<div class='legend-item'><span class='legend-dot' style='background:#00ff00'></span> Medium-low</div>" +
+      "<div class='legend-item'><span class='legend-dot' style='background:#00ccff'></span> Low density</div>" +
+      "<div class='legend-item'><span class='legend-dot' style='background:#0000ff'></span> Very low</div>";
+    return div;
+  };
+  legend.addTo(map);
+
+</script>
+</body>
+</html>
